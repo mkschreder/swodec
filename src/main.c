@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <string.h>
 #include <glib.h>
 
 #include <libswo/libswo.h>
@@ -27,21 +28,98 @@
 #define BUFFER_SIZE	1024
 
 static gchar *input_file = NULL;
+static uint16_t packet_type_filter;
+
+static gboolean parse_filter_option(const gchar *option_name,
+		const gchar *value, gpointer data, GError **error)
+{
+	gchar **tokens;
+	unsigned int i;
+	uint16_t tmp;
+
+	(void)option_name;
+	(void)data;
+	(void)error;
+
+	if (!strlen(value))
+		return TRUE;
+
+	i = 0;
+	tokens = g_strsplit(value, ",", -1);
+	tmp = 0x0000;
+
+	while (tokens[i]) {
+		g_strstrip(tokens[i]);
+
+		if (!strlen(tokens[i])) {
+			i++;
+			continue;
+		}
+
+		if (!g_ascii_strcasecmp(tokens[i], "sync")) {
+			tmp |= (1 << LIBSWO_PACKET_TYPE_SYNC);
+		} else if (!g_ascii_strcasecmp(tokens[i], "of")) {
+			tmp |= (1 << LIBSWO_PACKET_TYPE_OVERFLOW);
+		} else if (!g_ascii_strcasecmp(tokens[i], "lts")) {
+			tmp |= (1 << LIBSWO_PACKET_TYPE_LTS);
+		} else if (!g_ascii_strcasecmp(tokens[i], "gts")) {
+			tmp |= (1 << LIBSWO_PACKET_TYPE_GTS1);
+			tmp |= (1 << LIBSWO_PACKET_TYPE_GTS2);
+		} else if (!g_ascii_strcasecmp(tokens[i], "gts1")) {
+			tmp |= (1 << LIBSWO_PACKET_TYPE_GTS1);
+		} else if (!g_ascii_strcasecmp(tokens[i], "gts2")) {
+			tmp |= (1 << LIBSWO_PACKET_TYPE_GTS2);
+		} else if (!g_ascii_strcasecmp(tokens[i], "ext")) {
+			tmp |= (1 << LIBSWO_PACKET_TYPE_EXT);
+		} else if (!g_ascii_strcasecmp(tokens[i], "inst")) {
+			tmp |= (1 << LIBSWO_PACKET_TYPE_INST);
+		} else if (!g_ascii_strcasecmp(tokens[i], "hw")) {
+			tmp |= (1 << LIBSWO_PACKET_TYPE_HW);
+		} else if (!g_ascii_strcasecmp(tokens[i], "unknown")) {
+			tmp |= (1 << LIBSWO_PACKET_TYPE_UNKNOWN);
+		} else {
+			g_critical("Invalid packet type: %s.", tokens[i]);
+			g_strfreev(tokens);
+			return FALSE;
+		}
+
+		i++;
+	}
+
+	/*
+	 * Apply the packet type filter only if at least one valid packet type
+	 * was specified.
+	 */
+	if (tmp > 0)
+		packet_type_filter = tmp;
+
+	g_strfreev(tokens);
+
+	return TRUE;
+}
 
 static GOptionEntry entries[] = {
 	{"input-file", 'i', 0, G_OPTION_ARG_STRING, &input_file,
 		"Load trace data from file", NULL},
+	{"filter", 'f', 0, G_OPTION_ARG_CALLBACK, &parse_filter_option,
+		"Filter for packet types", NULL},
 	{NULL, 0, 0, 0, NULL, NULL, NULL}
 };
 
 static void handle_hw_packet(const union libswo_packet *packet)
 {
+	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_HW)))
+		return;
+
 	printf("Hardware source (address = %u, size = %zu bytes, value = %x)\n",
 		packet->hw.address, packet->hw.size - 1, packet->hw.value);
 }
 
 static void handle_inst_packet(const union libswo_packet *packet)
 {
+	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_INST)))
+		return;
+
 	printf("Instrumentation (address = %u, size = %zu bytes, value = %x)\n",
 		packet->inst.address, packet->inst.size - 1,
 		packet->inst.value);
@@ -49,6 +127,9 @@ static void handle_inst_packet(const union libswo_packet *packet)
 
 static void handle_overflow_packet(const union libswo_packet *packet)
 {
+	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_OVERFLOW)))
+		return;
+
 	(void)packet;
 	printf("Overflow\n");
 }
@@ -56,6 +137,9 @@ static void handle_overflow_packet(const union libswo_packet *packet)
 static void handle_ext_packet(const union libswo_packet *packet)
 {
 	const char *src;
+
+	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_EXT)))
+		return;
 
 	switch (packet->ext.source) {
 	case LIBSWO_EXT_SRC_ITM:
@@ -72,11 +156,17 @@ static void handle_ext_packet(const union libswo_packet *packet)
 
 static void handle_unknown_packet(const union libswo_packet *packet)
 {
+	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_UNKNOWN)))
+		return;
+
 	printf("Unknown data (size = %zu bytes)\n", packet->unknown.size);
 }
 
 static void handle_sync_packet(const union libswo_packet *packet)
 {
+	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_SYNC)))
+		return;
+
 	if (packet->sync.size % 8)
 		printf("Synchronisation (size = %zu bits)\n",
 			packet->sync.size);
@@ -88,6 +178,9 @@ static void handle_sync_packet(const union libswo_packet *packet)
 static void handle_lts_packet(const union libswo_packet *packet)
 {
 	const char *tc;
+
+	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_LTS)))
+		return;
 
 	switch (packet->lts.relation) {
 	case LIBSWO_LTS_REL_SYNC:
@@ -109,12 +202,18 @@ static void handle_lts_packet(const union libswo_packet *packet)
 
 static void handle_gts1_packet(const union libswo_packet *packet)
 {
+	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_GTS1)))
+		return;
+
 	printf("Global timestamp (GTS1) (value = %x, wrap = %u, clkch = %u)\n",
 		packet->gts1.value, packet->gts1.wrap, packet->gts1.clkch);
 }
 
 static void handle_gts2_packet(const union libswo_packet *packet)
 {
+	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_GTS2)))
+		return;
+
 	printf("Global timestamp (GTS2) (value = %x)\n", packet->gts2.value);
 }
 
@@ -190,6 +289,17 @@ int main(int argc, char **argv)
 	GError *error;
 	GIOStatus iostat;
 	gsize num;
+
+	/* Disable packet filtering for all packet types by default. */
+	packet_type_filter = (1 << LIBSWO_PACKET_TYPE_SYNC) | \
+		(1 << LIBSWO_PACKET_TYPE_OVERFLOW) | \
+		(1 << LIBSWO_PACKET_TYPE_LTS) | \
+		(1 << LIBSWO_PACKET_TYPE_GTS1) | \
+		(1 << LIBSWO_PACKET_TYPE_GTS2) | \
+		(1 << LIBSWO_PACKET_TYPE_EXT) | \
+		(1 << LIBSWO_PACKET_TYPE_INST) | \
+		(1 << LIBSWO_PACKET_TYPE_HW) | \
+		(1 << LIBSWO_PACKET_TYPE_UNKNOWN);
 
 	if (!parse_options(&argc, &argv))
 		return EXIT_FAILURE;
