@@ -281,8 +281,8 @@ int main(int argc, char **argv)
 
 	ret = libswo_decode(ctx, 0, LIBSWO_DF_EOS);
 
-	if (ret != LIBSWO_OK) {
-		g_critical("libswo_feed() failed: %s.\n",
+	if (ret < LIBSWO_OK) {
+		g_critical("libswo_decode() failed: %s.\n",
 			libswo_strerror_name(ret));
 		g_io_channel_unref(input);
 		libswo_exit(ctx);
