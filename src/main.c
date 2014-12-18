@@ -29,6 +29,9 @@
 
 static gchar *input_file = NULL;
 static uint16_t packet_type_filter;
+static gboolean opt_decode_dwt;
+
+void dwt_handle_packet(const struct libswo_packet_hw *packet);
 
 static gboolean parse_filter_option(const gchar *option_name,
 		const gchar *value, gpointer data, GError **error)
@@ -103,6 +106,8 @@ static GOptionEntry entries[] = {
 		"Load trace data from file", NULL},
 	{"filter", 'f', 0, G_OPTION_ARG_CALLBACK, &parse_filter_option,
 		"Filter for packet types", NULL},
+	{"dwt", 0, 0, G_OPTION_ARG_NONE, &opt_decode_dwt,
+		"Enable DWT decoder", NULL},
 	{NULL, 0, 0, 0, NULL, NULL, NULL}
 };
 
@@ -110,6 +115,11 @@ static void handle_hw_packet(const union libswo_packet *packet)
 {
 	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_HW)))
 		return;
+
+	if (opt_decode_dwt) {
+		dwt_handle_packet(&packet->hw);
+		return;
+	}
 
 	printf("Hardware source (address = %u, size = %zu bytes, value = %x)\n",
 		packet->hw.address, packet->hw.size - 1, packet->hw.value);
@@ -289,6 +299,8 @@ int main(int argc, char **argv)
 	GError *error;
 	GIOStatus iostat;
 	gsize num;
+
+	opt_decode_dwt = FALSE;
 
 	/* Disable packet filtering for all packet types by default. */
 	packet_type_filter = (1 << LIBSWO_PACKET_TYPE_SYNC) | \
