@@ -1,0 +1,99 @@
+.TH swodec 1 "May 05, 2015"
+.SH NAME
+swodec \- decode SWO trace data
+
+.SH SYNOPSIS
+.B swodec [OPTIONS]
+
+.SH DESCRIPTION
+.B swodec
+is a command-line utility to decode SWO trace data.
+
+.SH OPTIONS
+.TP
+.B \-h, \-\-help
+Show a help text and exit.
+
+.TP
+.BR "\-i, \-\-input\-file " <filename>
+Load trace data from a file instead of using standard input.
+
+.TP
+.BR "\-f, \-\-filter " <list>
+A comma-separated list of packet types to filter for. The following packet types
+are available:
+
+.RS
+.RS
+.TP
+.B sync
+Synchronization
+.TP
+.B of
+Overflow
+.TP
+.B lts
+Local timestamp
+.TP
+.B gts
+Global timestamp. This is a shortcut for \fBgts1\fP and \fBgts2\fP.
+.TP
+.B gts1
+Global timestamp (GTS1)
+.TP
+.B gts2
+Global timestamp (GTS2)
+.TP
+.B ext
+Extension
+.TP
+.B inst
+Instrumentation
+.TP
+.B hw
+Hardware source
+.TP
+.B unknown
+Unknown data
+.RE
+.RE
+
+.RS
+If a tilde (~) precedes the list the machting sense is inverted.
+.RE
+
+.TP
+.BR "\-\-filter-inst " <list>
+A comma-separated list of instrumentation source addresses to filter for. If a
+tilde (~) precedes the list the machting sense is inverted. Each address must be
+in the range from \fB0\fP to \fB31\fP.
+
+.TP
+.B \-\-dump-inst
+Dump the payload of instrumentation packets. All other packet types are filtered
+out.
+
+.TP
+.B \-\-dwt
+Decode hardware source packets as Data Watchpoint and Trace (DWT) packets.
+
+.SH EXAMPLES
+
+In order to decode trace data from a file (e.g. trace.bin), run the following
+command:
+
+.RB " $ " "swodec \-\-input\-file trace.bin"
+
+If you want to filter for instrumentation and hardware source packets only, use:
+
+.RB " $ " "swodec \-\-input-file trace.bin \-\-filter inst,hw"
+
+To decode hardware source packets as Data Watchpoint and Trace (DWT) packets,
+apply the \fB\-\-dwt\fP option:
+
+.RB " $ " "swodec \-\-input-file trace.bin \-\-filter inst,hw \-\-dwt"
+
+If you are interested in all packets except for unknown data and
+synchronization, the simplest way is to invert the sense of matching:
+
+.RB " $ " "swodec \-\-input-file trace.bin \-\-filter ~unknown,sync \-\-dwt"

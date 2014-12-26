@@ -19,3 +19,5 @@
 
 ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = src
+
+dist_man_MANS = man/swodec.1
