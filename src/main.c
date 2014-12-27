@@ -185,7 +185,7 @@ static gboolean parse_inst_filter_option(const gchar *option_name,
 }
 
 static GOptionEntry entries[] = {
-	{"input-file", 'i', 0, G_OPTION_ARG_STRING, &input_file,
+	{"input-file", 'i', 0, G_OPTION_ARG_FILENAME, &input_file,
 		"Load trace data from file", NULL},
 	{"filter", 'f', 0, G_OPTION_ARG_CALLBACK, &parse_filter_option,
 		"Filter for packet types", NULL},
