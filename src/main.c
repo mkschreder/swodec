@@ -121,8 +121,8 @@ static void handle_hw_packet(const union libswo_packet *packet)
 		return;
 	}
 
-	printf("Hardware source (address = %u, size = %zu bytes, value = %x)\n",
-		packet->hw.address, packet->hw.size - 1, packet->hw.value);
+	printf("Hardware source (address = %u, value = %x, size = %zu bytes)\n",
+		packet->hw.address, packet->hw.value, packet->hw.size - 1);
 }
 
 static void handle_inst_packet(const union libswo_packet *packet)
@@ -130,9 +130,9 @@ static void handle_inst_packet(const union libswo_packet *packet)
 	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_INST)))
 		return;
 
-	printf("Instrumentation (address = %u, size = %zu bytes, value = %x)\n",
-		packet->inst.address, packet->inst.size - 1,
-		packet->inst.value);
+	printf("Instrumentation (address = %u, value = %x, size = %zu bytes)\n",
+		packet->inst.address, packet->inst.value,
+		packet->inst.size - 1);
 }
 
 static void handle_overflow_packet(const union libswo_packet *packet)
@@ -194,20 +194,21 @@ static void handle_lts_packet(const union libswo_packet *packet)
 
 	switch (packet->lts.relation) {
 	case LIBSWO_LTS_REL_SYNC:
-		tc = "";
+		tc = "synchronous";
 		break;
 	case LIBSWO_LTS_REL_TS:
-		tc = ", timestamp packet delayed";
+		tc = "timestamp delayed";
 		break;
 	case LIBSWO_LTS_REL_SRC:
-		tc = ", source packet delayed";
+		tc = "data delayed";
 		break;
 	case LIBSWO_LTS_REL_BOTH:
-		tc = ", source and timestamp packet delayed";
+		tc = "data and timestamp delayed";
 		break;
 	}
 
-	printf("Local timestamp (value = %x%s)\n", packet->lts.value, tc);
+	printf("Local timestamp (relation = %s, value = %x)\n", tc,
+		packet->lts.value);
 }
 
 static void handle_gts1_packet(const union libswo_packet *packet)
@@ -215,8 +216,8 @@ static void handle_gts1_packet(const union libswo_packet *packet)
 	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_GTS1)))
 		return;
 
-	printf("Global timestamp (GTS1) (value = %x, wrap = %u, clkch = %u)\n",
-		packet->gts1.value, packet->gts1.wrap, packet->gts1.clkch);
+	printf("Global timestamp (GTS1) (wrap = %u, clkch = %u, value = %x)\n",
+		packet->gts1.wrap, packet->gts1.clkch, packet->gts1.value);
 }
 
 static void handle_gts2_packet(const union libswo_packet *packet)
