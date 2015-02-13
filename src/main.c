@@ -29,6 +29,7 @@
 
 static gchar *input_file = NULL;
 static uint16_t packet_type_filter;
+static uint32_t inst_address_filter;
 static gboolean opt_decode_dwt;
 
 void dwt_handle_packet(const struct libswo_packet_hw *packet);
@@ -101,11 +102,72 @@ static gboolean parse_filter_option(const gchar *option_name,
 	return TRUE;
 }
 
+static gboolean parse_inst_filter_option(const gchar *option_name,
+		const gchar *value, gpointer data, GError **error)
+{
+	gchar **tokens;
+	unsigned int i;
+	uint32_t tmp;
+	long int address;
+	char *endptr;
+
+	(void)option_name;
+	(void)data;
+	(void)error;
+
+	if (!strlen(value))
+		return TRUE;
+
+	i = 0;
+	tokens = g_strsplit(value, ",", -1);
+	tmp = 0x00000000;
+
+	while (tokens[i]) {
+		g_strstrip(tokens[i]);
+
+		if (!strlen(tokens[i])) {
+			i++;
+			continue;
+		}
+
+		address = strtoll(tokens[i], &endptr, 10);
+
+		if (endptr == tokens[i] || *endptr != '\0') {
+			g_critical("Invalid source address: %s.", tokens[i]);
+			g_strfreev(tokens);
+			return FALSE;
+		}
+
+		if (address < 0 || address > 31) {
+			g_critical("Source address out of range: %li.",
+				address);
+			g_strfreev(tokens);
+			return FALSE;
+		}
+
+		tmp |= (1 << address);
+		i++;
+	}
+
+	/*
+	 * Apply the instrumentation source address filter only if at least one
+	 * valid source address was specified.
+	 */
+	if (tmp > 0)
+		inst_address_filter = tmp;
+
+	g_strfreev(tokens);
+
+	return TRUE;
+}
+
 static GOptionEntry entries[] = {
 	{"input-file", 'i', 0, G_OPTION_ARG_STRING, &input_file,
 		"Load trace data from file", NULL},
 	{"filter", 'f', 0, G_OPTION_ARG_CALLBACK, &parse_filter_option,
 		"Filter for packet types", NULL},
+	{"filter-inst", 0, 0, G_OPTION_ARG_CALLBACK, &parse_inst_filter_option,
+		"Filter for instrumentation source addresses", NULL},
 	{"dwt", 0, 0, G_OPTION_ARG_NONE, &opt_decode_dwt,
 		"Enable DWT decoder", NULL},
 	{NULL, 0, 0, 0, NULL, NULL, NULL}
@@ -128,6 +190,9 @@ static void handle_hw_packet(const union libswo_packet *packet)
 static void handle_inst_packet(const union libswo_packet *packet)
 {
 	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_INST)))
+		return;
+
+	if (!(inst_address_filter & (1 << packet->inst.address)))
 		return;
 
 	printf("Instrumentation (address = %u, value = %x, size = %zu bytes)\n",
@@ -313,6 +378,9 @@ int main(int argc, char **argv)
 		(1 << LIBSWO_PACKET_TYPE_INST) | \
 		(1 << LIBSWO_PACKET_TYPE_HW) | \
 		(1 << LIBSWO_PACKET_TYPE_UNKNOWN);
+
+	/* Disable instrumentation source address filtering by default. */
+	inst_address_filter = 0xffffffff;
 
 	if (!parse_options(&argc, &argv))
 		return EXIT_FAILURE;
