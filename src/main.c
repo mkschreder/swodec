@@ -40,6 +40,7 @@ static gboolean parse_filter_option(const gchar *option_name,
 	gchar **tokens;
 	unsigned int i;
 	uint16_t tmp;
+	gboolean invert;
 
 	(void)option_name;
 	(void)data;
@@ -47,6 +48,13 @@ static gboolean parse_filter_option(const gchar *option_name,
 
 	if (!strlen(value))
 		return TRUE;
+
+	if (value[0] == '~') {
+		value++;
+		invert = TRUE;
+	} else {
+		invert = FALSE;
+	}
 
 	i = 0;
 	tokens = g_strsplit(value, ",", -1);
@@ -90,6 +98,9 @@ static gboolean parse_filter_option(const gchar *option_name,
 		i++;
 	}
 
+	if (invert)
+		tmp = ~tmp;
+
 	/*
 	 * Apply the packet type filter only if at least one valid packet type
 	 * was specified.
@@ -110,6 +121,7 @@ static gboolean parse_inst_filter_option(const gchar *option_name,
 	uint32_t tmp;
 	long int address;
 	char *endptr;
+	gboolean invert;
 
 	(void)option_name;
 	(void)data;
@@ -117,6 +129,13 @@ static gboolean parse_inst_filter_option(const gchar *option_name,
 
 	if (!strlen(value))
 		return TRUE;
+
+	if (value[0] == '~') {
+		value++;
+		invert = TRUE;
+	} else {
+		invert = FALSE;
+	}
 
 	i = 0;
 	tokens = g_strsplit(value, ",", -1);
@@ -148,6 +167,9 @@ static gboolean parse_inst_filter_option(const gchar *option_name,
 		tmp |= (1 << address);
 		i++;
 	}
+
+	if (invert)
+		tmp = ~tmp;
 
 	/*
 	 * Apply the instrumentation source address filter only if at least one
