@@ -30,6 +30,7 @@
 static gchar *input_file = NULL;
 static uint16_t packet_type_filter;
 static uint32_t inst_address_filter;
+static gboolean opt_dump_inst;
 static gboolean opt_decode_dwt;
 
 void dwt_handle_packet(const struct libswo_packet_hw *packet);
@@ -190,6 +191,8 @@ static GOptionEntry entries[] = {
 		"Filter for packet types", NULL},
 	{"filter-inst", 0, 0, G_OPTION_ARG_CALLBACK, &parse_inst_filter_option,
 		"Filter for instrumentation source addresses", NULL},
+	{"dump-inst", 0, 0, G_OPTION_ARG_NONE, &opt_dump_inst,
+		"Dump instrumentation payload", NULL},
 	{"dwt", 0, 0, G_OPTION_ARG_NONE, &opt_decode_dwt,
 		"Enable DWT decoder", NULL},
 	{NULL, 0, 0, 0, NULL, NULL, NULL}
@@ -216,6 +219,12 @@ static void handle_inst_packet(const union libswo_packet *packet)
 
 	if (!(inst_address_filter & (1 << packet->inst.address)))
 		return;
+
+	if (opt_dump_inst) {
+		fwrite(packet->inst.payload, packet->inst.size - 1, 1, stdout);
+		fflush(stdout);
+		return;
+	}
 
 	printf("Instrumentation (address = %u, value = %x, size = %zu bytes)\n",
 		packet->inst.address, packet->inst.value,
@@ -388,6 +397,7 @@ int main(int argc, char **argv)
 	GIOStatus iostat;
 	gsize num;
 
+	opt_dump_inst = FALSE;
 	opt_decode_dwt = FALSE;
 
 	/* Disable packet filtering for all packet types by default. */
@@ -406,6 +416,9 @@ int main(int argc, char **argv)
 
 	if (!parse_options(&argc, &argv))
 		return EXIT_FAILURE;
+
+	if (opt_dump_inst)
+		packet_type_filter = (1 << LIBSWO_PACKET_TYPE_INST);
 
 	error = NULL;
 
