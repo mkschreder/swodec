@@ -274,10 +274,10 @@ static void handle_sync_packet(const union libswo_packet *packet)
 		return;
 
 	if (packet->sync.size % 8)
-		printf("Synchronisation (size = %zu bits)\n",
+		printf("Synchronization (size = %zu bits)\n",
 			packet->sync.size);
 	else
-		printf("Synchronisation (size = %zu bytes)\n",
+		printf("Synchronization (size = %zu bytes)\n",
 			packet->sync.size / 8);
 }
 
