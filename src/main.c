@@ -25,8 +25,11 @@
 
 #include <libswo/libswo.h>
 
+#include "config.h"
+
 #define BUFFER_SIZE	1024
 
+static gboolean opt_version;
 static gchar *input_file = NULL;
 static uint16_t packet_type_filter;
 static uint32_t inst_address_filter;
@@ -185,6 +188,8 @@ static gboolean parse_inst_filter_option(const gchar *option_name,
 }
 
 static GOptionEntry entries[] = {
+	{"version", 'V', 0, G_OPTION_ARG_NONE, &opt_version,
+		"Show version information", NULL},
 	{"input-file", 'i', 0, G_OPTION_ARG_FILENAME, &input_file,
 		"Load trace data from file", NULL},
 	{"filter", 'f', 0, G_OPTION_ARG_CALLBACK, &parse_filter_option,
@@ -365,6 +370,12 @@ static int packet_cb(struct libswo_context *ctx,
 	return 0;
 }
 
+static void show_version(void)
+{
+	printf("%s\n", PACKAGE_STRING);
+	printf("Using libswo %s\n", libswo_version_package_get_string());
+}
+
 static int parse_options(int *argc, char ***argv)
 {
 	GError *error;
@@ -397,6 +408,7 @@ int main(int argc, char **argv)
 	GIOStatus iostat;
 	gsize num;
 
+	opt_version = FALSE;
 	opt_dump_inst = FALSE;
 	opt_decode_dwt = FALSE;
 
@@ -416,6 +428,11 @@ int main(int argc, char **argv)
 
 	if (!parse_options(&argc, &argv))
 		return EXIT_FAILURE;
+
+	if (opt_version) {
+		show_version();
+		return EXIT_SUCCESS;
+	}
 
 	if (opt_dump_inst)
 		packet_type_filter = (1 << LIBSWO_PACKET_TYPE_INST);
