@@ -34,9 +34,8 @@ static gchar *input_file = NULL;
 static uint16_t packet_type_filter;
 static uint32_t inst_address_filter;
 static gboolean opt_dump_inst;
-static gboolean opt_decode_dwt;
 
-void dwt_handle_packet(const struct libswo_packet_hw *packet);
+gboolean dwt_handle_packet(const struct libswo_packet_hw *packet);
 
 static gboolean parse_filter_option(const gchar *option_name,
 		const gchar *value, gpointer data, GError **error)
@@ -198,8 +197,6 @@ static GOptionEntry entries[] = {
 		"Filter for instrumentation source addresses", NULL},
 	{"dump-inst", 0, 0, G_OPTION_ARG_NONE, &opt_dump_inst,
 		"Dump instrumentation payload", NULL},
-	{"dwt", 0, 0, G_OPTION_ARG_NONE, &opt_decode_dwt,
-		"Enable DWT decoder", NULL},
 	{NULL, 0, 0, 0, NULL, NULL, NULL}
 };
 
@@ -208,10 +205,8 @@ static void handle_hw_packet(const union libswo_packet *packet)
 	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_HW)))
 		return;
 
-	if (opt_decode_dwt) {
-		dwt_handle_packet(&packet->hw);
+	if (dwt_handle_packet(&packet->hw))
 		return;
-	}
 
 	printf("Hardware source (address = %u, value = %x, size = %zu bytes)\n",
 		packet->hw.address, packet->hw.value, packet->hw.size - 1);
@@ -432,7 +427,6 @@ int main(int argc, char **argv)
 
 	opt_version = FALSE;
 	opt_dump_inst = FALSE;
-	opt_decode_dwt = FALSE;
 
 	/* Disable packet filtering for all packet types by default. */
 	packet_type_filter = (1 << LIBSWO_PACKET_TYPE_SYNC) | \

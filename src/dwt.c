@@ -299,39 +299,26 @@ static void handle_data_value_packet(const struct libswo_packet_hw *packet)
 		packet->size - 1);
 }
 
-static void handle_unknown_packet(const struct libswo_packet_hw *packet)
-{
-	printf("Unknown DWT packet (ID = %u, value = %x, size = %zu bytes)\n",
-		packet->address, packet->value, packet->size - 1);
-}
-
-void dwt_handle_packet(const struct libswo_packet_hw *packet)
+gboolean dwt_handle_packet(const struct libswo_packet_hw *packet)
 {
 	uint8_t addr;
 
 	addr = packet->address;
 
-	switch (addr) {
-	case EVCNT_ID:
+	if (addr == EVCNT_ID)
 		handle_evcnt_packet(packet);
-		return;
-	case EXTRACE_ID:
+	else if (addr == EXTRACE_ID)
 		handle_extrace_packet(packet);
-		return;
-	case PC_SAMPLE_ID:
+	else if (addr == PC_SAMPLE_ID)
 		handle_pc_sample_packet(packet);
-		return;
-	default:
-		break;
-	}
-
-	if ((addr & PC_VALUE_HEADER_MASK) == PC_VALUE_HEADER) {
+	else if ((addr & PC_VALUE_HEADER_MASK) == PC_VALUE_HEADER)
 		handle_pc_value_packet(packet);
-	} else if ((addr & ADDR_OFFSET_HEADER_MASK) == ADDR_OFFSET_HEADER) {
+	else if ((addr & ADDR_OFFSET_HEADER_MASK) == ADDR_OFFSET_HEADER)
 		handle_address_offset_packet(packet);
-	} else if ((addr & DATA_VALUE_HEADER_MASK) == DATA_VALUE_HEADER) {
+	else if ((addr & DATA_VALUE_HEADER_MASK) == DATA_VALUE_HEADER)
 		handle_data_value_packet(packet);
-	} else {
-		handle_unknown_packet(packet);
-	}
+	else
+		return FALSE;
+
+	return TRUE;
 }

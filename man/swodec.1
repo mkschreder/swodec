@@ -1,4 +1,4 @@
-.TH swodec 1 "May 05, 2015"
+.TH swodec 1 "May 20, 2015"
 .SH NAME
 swodec \- decode SWO trace data
 
@@ -77,10 +77,6 @@ in the range from \fB0\fP to \fB31\fP.
 Dump the payload of instrumentation packets. All other packet types are filtered
 out.
 
-.TP
-.B \-\-dwt
-Decode hardware source packets as Data Watchpoint and Trace (DWT) packets.
-
 .SH EXAMPLES
 
 In order to decode trace data from a file (e.g. trace.bin), run the following
@@ -92,12 +88,7 @@ If you want to filter for instrumentation and hardware source packets only, use:
 
 .RB " $ " "swodec \-\-input-file trace.bin \-\-filter inst,hw"
 
-To decode hardware source packets as Data Watchpoint and Trace (DWT) packets,
-apply the \fB\-\-dwt\fP option:
-
-.RB " $ " "swodec \-\-input-file trace.bin \-\-filter inst,hw \-\-dwt"
-
 If you are interested in all packets except for unknown data and
 synchronization, the simplest way is to invert the sense of matching:
 
-.RB " $ " "swodec \-\-input-file trace.bin \-\-filter ~unknown,sync \-\-dwt"
+.RB " $ " "swodec \-\-input-file trace.bin \-\-filter ~unknown,sync"
