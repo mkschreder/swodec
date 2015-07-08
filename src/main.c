@@ -464,8 +464,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	if (!input_file)
-		g_io_channel_set_buffered(input, FALSE);
+	g_io_channel_set_buffered(input, FALSE);
 
 	ret = libswo_init(&ctx, NULL, BUFFER_SIZE * 2);
 
