@@ -107,6 +107,32 @@
 /* Data trace data value packet header. */
 #define DATA_VALUE_HEADER	0x10
 
+/*
+ * Exception names according to section B1.5 of ARMv7-M Architecture Reference
+ * Manual.
+ */
+static const char *exception_names[] = {
+	"Thread",
+	"Reset",
+	"NMI",
+	"HardFault",
+	"MemManage",
+	"BusFault",
+	"UsageFault",
+	"Reserved",
+	"Reserved",
+	"Reserved",
+	"Reserved",
+	"SVCall",
+	"Debug Monitor",
+	"Reserved",
+	"PendSV",
+	"SysTick"
+};
+
+/* Number of exception names. */
+#define NUM_EXCEPTION_NAMES	16
+
 /* Exception trace functions. */
 enum extrace_function {
 	/* Enter exception. */
@@ -171,6 +197,8 @@ static void handle_extrace_packet(const struct libswo_packet_hw *packet)
 	uint16_t exception;
 	uint8_t tmp;
 	const char *func;
+	const char *name;
+	char buf[23];
 
 	if (packet->size != EXTRACE_SIZE) {
 		g_warning("Exception trace packet with invalid size of "
@@ -197,8 +225,15 @@ static void handle_extrace_packet(const struct libswo_packet_hw *packet)
 		func = "reserved";
 	}
 
-	printf("Exception trace (function = %s, exception = %u)\n", func,
-		exception);
+	if (exception < NUM_EXCEPTION_NAMES) {
+		name = exception_names[exception];
+	} else {
+		snprintf(buf, sizeof(buf), "External interrupt %u",
+			exception - NUM_EXCEPTION_NAMES);
+		name = buf;
+	}
+
+	printf("Exception trace (function = %s, exception = %s)\n", func, name);
 }
 
 static void handle_pc_sample_packet(const struct libswo_packet_hw *packet)
