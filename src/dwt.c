@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <glib.h>
 
 #include <libswo/libswo.h>
 
@@ -126,8 +127,8 @@ static void handle_evcnt_packet(const struct libswo_packet_hw *packet)
 	unsigned int cyc;
 
 	if (packet->size != EVCNT_SIZE) {
-		printf("Event counter packet with invalid size of %zu bytes.\n",
-			packet->size);
+		g_warning("Event counter packet with invalid size of "
+			"%zu bytes.", packet->size);
 		return;
 	}
 
@@ -172,8 +173,8 @@ static void handle_extrace_packet(const struct libswo_packet_hw *packet)
 	const char *func;
 
 	if (packet->size != EXTRACE_SIZE) {
-		printf("Exception trace packet with invalid size of "
-			"%zu bytes.\n", packet->size);
+		g_warning("Exception trace packet with invalid size of "
+			"%zu bytes.", packet->size);
 		return;
 	}
 
@@ -204,8 +205,8 @@ static void handle_pc_sample_packet(const struct libswo_packet_hw *packet)
 {
 	if (packet->size == PC_SAMPLE_SLEEP_SIZE) {
 		if (packet->value > 0) {
-			printf("Periodic PC sleep packet contains invalid "
-				"value: %x.\n", packet->value);
+			g_warning("Periodic PC sleep packet contains invalid "
+				"value: %x.", packet->value);
 			return;
 		}
 
@@ -213,8 +214,8 @@ static void handle_pc_sample_packet(const struct libswo_packet_hw *packet)
 	} else if (packet->size == PC_SAMPLE_SIZE) {
 		printf("Periodic PC sample (value = %x)\n", packet->value);
 	} else {
-		printf("Periodic PC sample packet with invalid size of "
-			"%zu bytes.\n", packet->size);
+		g_warning("Periodic PC sample packet with invalid size of "
+			"%zu bytes.", packet->size);
 	}
 }
 
@@ -223,8 +224,8 @@ static void handle_pc_value_packet(const struct libswo_packet_hw *packet)
 	unsigned int cmpn;
 
 	if (packet->size != PC_VALUE_SIZE) {
-		printf("Data trace PC value packet with invalid size of "
-			"%zu bytes.\n", packet->size);
+		g_warning("Data trace PC value packet with invalid size of "
+			"%zu bytes.", packet->size);
 		return;
 	}
 
@@ -239,8 +240,8 @@ static void handle_address_offset_packet(const struct libswo_packet_hw *packet)
 	unsigned int cmpn;
 
 	if (packet->size != ADDR_OFFSET_SIZE) {
-		printf("Data trace address offset packet with invalid size of "
-			"%zu bytes.\n", packet->size);
+		g_warning("Data trace address offset packet with invalid size "
+			"of %zu bytes.", packet->size);
 		return;
 	}
 

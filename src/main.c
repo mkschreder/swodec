@@ -387,7 +387,7 @@ static int parse_options(int *argc, char ***argv)
 	g_option_context_add_main_entries(context, entries, NULL);
 
 	if (!g_option_context_parse(context, argc, argv, &error)) {
-		g_critical("%s.\n", error->message);
+		g_critical("%s.", error->message);
 		g_error_free(error);
 		g_option_context_free(context);
 		return FALSE;
@@ -396,6 +396,17 @@ static int parse_options(int *argc, char ***argv)
 	g_option_context_free(context);
 
 	return TRUE;
+}
+
+void log_handler(const gchar *domain, GLogLevelFlags level,
+		const gchar *message, gpointer user_data)
+{
+	(void)domain;
+	(void)level;
+	(void)user_data;
+
+	fprintf(stderr, "%s\n", message);
+	fflush(stderr);
 }
 
 int main(int argc, char **argv)
@@ -407,6 +418,8 @@ int main(int argc, char **argv)
 	GError *error;
 	GIOStatus iostat;
 	gsize num;
+
+	g_log_set_default_handler(&log_handler, NULL);
 
 	opt_version = FALSE;
 	opt_dump_inst = FALSE;
@@ -443,7 +456,7 @@ int main(int argc, char **argv)
 		input = g_io_channel_new_file(input_file, "r", &error);
 
 		if (!input) {
-			g_critical("%s: %s.\n", input_file, error->message);
+			g_critical("%s: %s.", input_file, error->message);
 			g_error_free(error);
 			g_free(input_file);
 			return EXIT_FAILURE;
@@ -458,7 +471,7 @@ int main(int argc, char **argv)
 	iostat = g_io_channel_set_encoding(input, NULL, &error);
 
 	if (iostat != G_IO_STATUS_NORMAL) {
-		g_critical("%s.\n", error->message);
+		g_critical("%s.", error->message);
 		g_error_free(error);
 		g_io_channel_unref(input);
 		return EXIT_FAILURE;
@@ -469,7 +482,7 @@ int main(int argc, char **argv)
 	ret = libswo_init(&ctx, NULL, BUFFER_SIZE * 2);
 
 	if (ret != LIBSWO_OK) {
-		g_critical("libswo_init() failed: %s.\n",
+		g_critical("libswo_init() failed: %s.",
 			libswo_strerror_name(ret));
 		g_io_channel_unref(input);
 		return EXIT_FAILURE;
@@ -478,7 +491,7 @@ int main(int argc, char **argv)
 	ret = libswo_set_callback(ctx, &packet_cb, NULL);
 
 	if (ret != LIBSWO_OK) {
-		g_critical("libswo_set_callback() failed: %s.\n",
+		g_critical("libswo_set_callback() failed: %s.",
 			libswo_strerror_name(ret));
 		g_io_channel_unref(input);
 		libswo_exit(ctx);
@@ -495,7 +508,7 @@ int main(int argc, char **argv)
 		ret = libswo_feed(ctx, buffer, num);
 
 		if (ret != LIBSWO_OK) {
-			g_critical("libswo_feed() failed: %s.\n",
+			g_critical("libswo_feed() failed: %s.",
 				libswo_strerror_name(ret));
 			g_io_channel_unref(input);
 			libswo_exit(ctx);
@@ -505,7 +518,7 @@ int main(int argc, char **argv)
 		ret = libswo_decode(ctx, 0, 0);
 
 		if (ret < LIBSWO_OK) {
-			g_critical("libswo_decode() failed: %s.\n",
+			g_critical("libswo_decode() failed: %s.",
 				libswo_strerror_name(ret));
 			g_io_channel_unref(input);
 			libswo_exit(ctx);
@@ -517,7 +530,7 @@ int main(int argc, char **argv)
 	}
 
 	if (iostat == G_IO_STATUS_ERROR) {
-		g_critical("%s.\n", error->message);
+		g_critical("%s.", error->message);
 		g_error_free(error);
 		g_io_channel_unref(input);
 		libswo_exit(ctx);
@@ -527,7 +540,7 @@ int main(int argc, char **argv)
 	ret = libswo_decode(ctx, 0, LIBSWO_DF_EOS);
 
 	if (ret < LIBSWO_OK) {
-		g_critical("libswo_decode() failed: %s.\n",
+		g_critical("libswo_decode() failed: %s.",
 			libswo_strerror_name(ret));
 		g_io_channel_unref(input);
 		libswo_exit(ctx);
