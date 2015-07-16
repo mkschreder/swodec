@@ -259,6 +259,10 @@ static void handle_ext_packet(const union libswo_packet *packet)
 	case LIBSWO_EXT_SRC_HW:
 		src = "HW";
 		break;
+	default:
+		g_warning("Extension packet with invalid source: %u.",
+			packet->ext.source);
+		return;
 	}
 
 	printf("Extension (source = %s, value = %x)\n", src,
@@ -306,6 +310,10 @@ static void handle_lts_packet(const union libswo_packet *packet)
 	case LIBSWO_LTS_REL_BOTH:
 		tc = "data and timestamp delayed";
 		break;
+	default:
+		g_warning("Local timestamp packet with invalid relation: %u.",
+			packet->lts.relation);
+		return;
 	}
 
 	printf("Local timestamp (relation = %s, value = %x)\n", tc,
@@ -364,6 +372,7 @@ static int packet_cb(struct libswo_context *ctx,
 		handle_unknown_packet(packet);
 		break;
 	default:
+		g_warning("Invalid packet type: %u.", packet->type);
 		break;
 	}
 
