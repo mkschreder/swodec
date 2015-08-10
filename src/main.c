@@ -402,7 +402,7 @@ static int parse_options(int *argc, char ***argv)
 	return TRUE;
 }
 
-void log_handler(const gchar *domain, GLogLevelFlags level,
+static void log_handler(const gchar *domain, GLogLevelFlags level,
 		const gchar *message, gpointer user_data)
 {
 	(void)domain;
