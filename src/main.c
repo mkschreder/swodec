@@ -518,9 +518,9 @@ int main(int argc, char **argv)
 			return EXIT_FAILURE;
 		}
 
-		ret = libswo_decode(ctx, 0, 0);
+		ret = libswo_decode(ctx, 0);
 
-		if (ret < LIBSWO_OK) {
+		if (ret != LIBSWO_OK) {
 			g_critical("libswo_decode() failed: %s.",
 				libswo_strerror_name(ret));
 			g_io_channel_unref(input);
@@ -540,9 +540,9 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	ret = libswo_decode(ctx, 0, LIBSWO_DF_EOS);
+	ret = libswo_decode(ctx, LIBSWO_DF_EOS);
 
-	if (ret < LIBSWO_OK) {
+	if (ret != LIBSWO_OK) {
 		g_critical("libswo_decode() failed: %s.",
 			libswo_strerror_name(ret));
 		g_io_channel_unref(input);
