@@ -376,7 +376,7 @@ static int packet_cb(struct libswo_context *ctx,
 		break;
 	}
 
-	return 0;
+	return TRUE;
 }
 
 static void show_version(void)
