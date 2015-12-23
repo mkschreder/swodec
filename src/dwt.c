@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include <glib.h>
 
-#include <libswo/libswo.h>
+#include "swodec.h"
 
 /* Event counter packet discriminator ID. */
 #define EVCNT_ID		0
@@ -152,6 +152,9 @@ static void handle_evcnt_packet(const struct libswo_packet_hw *packet)
 	unsigned int fold;
 	unsigned int cyc;
 
+	if (!(packet_type_filter & (1 << DWT_PACKET_TYPE_EVENT_COUNTER)))
+		return;
+
 	if (packet->size != EVCNT_SIZE) {
 		g_warning("Event counter packet with invalid size of "
 			"%zu bytes.", packet->size);
@@ -200,6 +203,9 @@ static void handle_extrace_packet(const struct libswo_packet_hw *packet)
 	const char *name;
 	char buf[23];
 
+	if (!(packet_type_filter & (1 << DWT_PACKET_TYPE_EXCEPTION_TRACE)))
+		return;
+
 	if (packet->size != EXTRACE_SIZE) {
 		g_warning("Exception trace packet with invalid size of "
 			"%zu bytes.", packet->size);
@@ -238,6 +244,10 @@ static void handle_extrace_packet(const struct libswo_packet_hw *packet)
 
 static void handle_pc_sample_packet(const struct libswo_packet_hw *packet)
 {
+
+	if (!(packet_type_filter & (1 << DWT_PACKET_TYPE_PC_SAMPLE)))
+		return;
+
 	if (packet->size == PC_SAMPLE_SLEEP_SIZE) {
 		if (packet->value > 0) {
 			g_warning("Periodic PC sleep packet contains invalid "
@@ -258,6 +268,9 @@ static void handle_pc_value_packet(const struct libswo_packet_hw *packet)
 {
 	unsigned int cmpn;
 
+	if (!(packet_type_filter & (1 << DWT_PACKET_TYPE_DT_PC_VALUE)))
+		return;
+
 	if (packet->size != PC_VALUE_SIZE) {
 		g_warning("Data trace PC value packet with invalid size of "
 			"%zu bytes.", packet->size);
@@ -273,6 +286,9 @@ static void handle_pc_value_packet(const struct libswo_packet_hw *packet)
 static void handle_address_offset_packet(const struct libswo_packet_hw *packet)
 {
 	unsigned int cmpn;
+
+	if (!(packet_type_filter & (1 << DWT_PACKET_TYPE_DT_ADDR_OFFSET)))
+		return;
 
 	if (packet->size != ADDR_OFFSET_SIZE) {
 		g_warning("Data trace address offset packet with invalid size "
@@ -290,6 +306,9 @@ static void handle_data_value_packet(const struct libswo_packet_hw *packet)
 {
 	unsigned int wnr;
 	unsigned int cmpn;
+
+	if (!(packet_type_filter & (1 << DWT_PACKET_TYPE_DT_DATA_VALUE)))
+		return;
 
 	wnr = packet->address & WNR_MASK;
 	cmpn = (packet->address & CMPN_MASK) >> CMPN_OFFSET;

@@ -23,19 +23,16 @@
 #include <string.h>
 #include <glib.h>
 
-#include <libswo/libswo.h>
-
 #include "config.h"
+#include "swodec.h"
 
 #define BUFFER_SIZE	1024
 
 static gboolean opt_version;
 static gchar *input_file = NULL;
-static uint16_t packet_type_filter;
+uint16_t packet_type_filter;
 static uint32_t inst_address_filter;
 static gboolean opt_dump_inst;
-
-gboolean dwt_handle_packet(const struct libswo_packet_hw *packet);
 
 static gboolean parse_filter_option(const gchar *option_name,
 		const gchar *value, gpointer data, GError **error)
@@ -90,6 +87,18 @@ static gboolean parse_filter_option(const gchar *option_name,
 			tmp |= (1 << LIBSWO_PACKET_TYPE_INST);
 		} else if (!g_ascii_strcasecmp(tokens[i], "hw")) {
 			tmp |= (1 << LIBSWO_PACKET_TYPE_HW);
+		} else if (!g_ascii_strcasecmp(tokens[i], "evcnt")) {
+			tmp |= (1 << DWT_PACKET_TYPE_EVENT_COUNTER);
+		} else if (!g_ascii_strcasecmp(tokens[i], "exc")) {
+			tmp |= (1 << DWT_PACKET_TYPE_EXCEPTION_TRACE);
+		} else if (!g_ascii_strcasecmp(tokens[i], "pc")) {
+			tmp |= (1 << DWT_PACKET_TYPE_PC_SAMPLE);
+		} else if (!g_ascii_strcasecmp(tokens[i], "dtpc")) {
+			tmp |= (1 << DWT_PACKET_TYPE_DT_PC_VALUE);
+		} else if (!g_ascii_strcasecmp(tokens[i], "dtaddr")) {
+			tmp |= (1 << DWT_PACKET_TYPE_DT_ADDR_OFFSET);
+		} else if (!g_ascii_strcasecmp(tokens[i], "dtval")) {
+			tmp |= (1 << DWT_PACKET_TYPE_DT_DATA_VALUE);
 		} else if (!g_ascii_strcasecmp(tokens[i], "unknown")) {
 			tmp |= (1 << LIBSWO_PACKET_TYPE_UNKNOWN);
 		} else {
@@ -202,10 +211,10 @@ static GOptionEntry entries[] = {
 
 static void handle_hw_packet(const union libswo_packet *packet)
 {
-	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_HW)))
+	if (dwt_handle_packet(&packet->hw))
 		return;
 
-	if (dwt_handle_packet(&packet->hw))
+	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_HW)))
 		return;
 
 	printf("Hardware source (address = %u, value = %x, size = %zu bytes)\n",
@@ -437,7 +446,13 @@ int main(int argc, char **argv)
 		(1 << LIBSWO_PACKET_TYPE_EXT) | \
 		(1 << LIBSWO_PACKET_TYPE_INST) | \
 		(1 << LIBSWO_PACKET_TYPE_HW) | \
-		(1 << LIBSWO_PACKET_TYPE_UNKNOWN);
+		(1 << LIBSWO_PACKET_TYPE_UNKNOWN) | \
+		(1 << DWT_PACKET_TYPE_EVENT_COUNTER) | \
+		(1 << DWT_PACKET_TYPE_EXCEPTION_TRACE) | \
+		(1 << DWT_PACKET_TYPE_PC_SAMPLE) | \
+		(1 << DWT_PACKET_TYPE_DT_PC_VALUE) | \
+		(1 << DWT_PACKET_TYPE_DT_ADDR_OFFSET) | \
+		(1 << DWT_PACKET_TYPE_DT_DATA_VALUE);
 
 	/* Disable instrumentation source address filtering by default. */
 	inst_address_filter = 0xffffffff;

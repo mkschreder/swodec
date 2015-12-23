@@ -1,4 +1,4 @@
-.TH swodec 1 "May 20, 2015"
+.TH swodec 1 "Dec 23, 2015"
 .SH NAME
 swodec \- decode SWO trace data
 
@@ -55,7 +55,26 @@ Extension
 Instrumentation
 .TP
 .B hw
-Hardware source
+Hardware source. This is for hardware source packets which could not be decoded
+as Data Watchpoint and Trace (DWT) packets.
+.TP
+.B evcnt
+Event counter
+.TP
+.B exc
+Exception trace
+.TP
+.B pc
+Periodic PC sample
+.TP
+.B dtpc
+Data trace PC value
+.TP
+.B dtaddr
+Data trace address offset
+.TP
+.B dtval
+Data trace data value
 .TP
 .B unknown
 Unknown data
