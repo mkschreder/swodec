@@ -87,6 +87,13 @@ static gboolean parse_filter_option(const gchar *option_name,
 			tmp |= (1 << LIBSWO_PACKET_TYPE_INST);
 		} else if (!g_ascii_strcasecmp(tokens[i], "hw")) {
 			tmp |= (1 << LIBSWO_PACKET_TYPE_HW);
+		} else if (!g_ascii_strcasecmp(tokens[i], "dwt")) {
+			tmp |= (1 << DWT_PACKET_TYPE_EVENT_COUNTER);
+			tmp |= (1 << DWT_PACKET_TYPE_EXCEPTION_TRACE);
+			tmp |= (1 << DWT_PACKET_TYPE_PC_SAMPLE);
+			tmp |= (1 << DWT_PACKET_TYPE_DT_PC_VALUE);
+			tmp |= (1 << DWT_PACKET_TYPE_DT_ADDR_OFFSET);
+			tmp |= (1 << DWT_PACKET_TYPE_DT_DATA_VALUE);
 		} else if (!g_ascii_strcasecmp(tokens[i], "evcnt")) {
 			tmp |= (1 << DWT_PACKET_TYPE_EVENT_COUNTER);
 		} else if (!g_ascii_strcasecmp(tokens[i], "exc")) {
