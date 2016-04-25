@@ -63,3 +63,11 @@ AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
 
 AC_OUTPUT
+
+echo
+echo "swodec configuration summary:"
+echo " - Package version ................ $PACKAGE_VERSION"
+echo " - Installation prefix ............ $prefix"
+echo " - Building on .................... $build"
+echo " - Building for ................... $host"
+echo
