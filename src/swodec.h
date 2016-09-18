@@ -25,7 +25,7 @@
 /* Data Watchpoint and Trace (DWT) packet types. */
 enum dwt_packet_type {
 	/* Event counter packet. */
-	DWT_PACKET_TYPE_EVENT_COUNTER = LIBSWO_PACKET_TYPE_UNKNOWN + 1,
+	DWT_PACKET_TYPE_EVENT_COUNTER = LIBSWO_PACKET_TYPE_HW + 1,
 	/* Exception trace packet. */
 	DWT_PACKET_TYPE_EXCEPTION_TRACE,
 	/* Periodic PC sample packet. */

@@ -71,7 +71,9 @@ static gboolean parse_filter_option(const gchar *option_name,
 			continue;
 		}
 
-		if (!g_ascii_strcasecmp(tokens[i], "sync")) {
+		if (!g_ascii_strcasecmp(tokens[i], "unknown")) {
+			tmp |= (1 << LIBSWO_PACKET_TYPE_UNKNOWN);
+		} else if (!g_ascii_strcasecmp(tokens[i], "sync")) {
 			tmp |= (1 << LIBSWO_PACKET_TYPE_SYNC);
 		} else if (!g_ascii_strcasecmp(tokens[i], "of")) {
 			tmp |= (1 << LIBSWO_PACKET_TYPE_OVERFLOW);
@@ -109,8 +111,6 @@ static gboolean parse_filter_option(const gchar *option_name,
 			tmp |= (1 << DWT_PACKET_TYPE_DT_ADDR_OFFSET);
 		} else if (!g_ascii_strcasecmp(tokens[i], "dtval")) {
 			tmp |= (1 << DWT_PACKET_TYPE_DT_DATA_VALUE);
-		} else if (!g_ascii_strcasecmp(tokens[i], "unknown")) {
-			tmp |= (1 << LIBSWO_PACKET_TYPE_UNKNOWN);
 		} else {
 			g_critical("Invalid packet type: %s.", tokens[i]);
 			g_strfreev(tokens);
@@ -358,6 +358,9 @@ static int packet_cb(struct libswo_context *ctx,
 	(void)user_data;
 
 	switch (packet->type) {
+	case LIBSWO_PACKET_TYPE_UNKNOWN:
+		handle_unknown_packet(packet);
+		break;
 	case LIBSWO_PACKET_TYPE_SYNC:
 		handle_sync_packet(packet);
 		break;
@@ -381,9 +384,6 @@ static int packet_cb(struct libswo_context *ctx,
 		break;
 	case LIBSWO_PACKET_TYPE_HW:
 		handle_hw_packet(packet);
-		break;
-	case LIBSWO_PACKET_TYPE_UNKNOWN:
-		handle_unknown_packet(packet);
 		break;
 	default:
 		g_warning("Invalid packet type: %u.", packet->type);
@@ -448,7 +448,8 @@ int main(int argc, char **argv)
 	opt_dump_inst = FALSE;
 
 	/* Disable packet filtering for all packet types by default. */
-	packet_type_filter = (1 << LIBSWO_PACKET_TYPE_SYNC) | \
+	packet_type_filter = (1 << LIBSWO_PACKET_TYPE_UNKNOWN) | \
+		(1 << LIBSWO_PACKET_TYPE_SYNC) | \
 		(1 << LIBSWO_PACKET_TYPE_OVERFLOW) | \
 		(1 << LIBSWO_PACKET_TYPE_LTS) | \
 		(1 << LIBSWO_PACKET_TYPE_GTS1) | \
@@ -456,7 +457,6 @@ int main(int argc, char **argv)
 		(1 << LIBSWO_PACKET_TYPE_EXT) | \
 		(1 << LIBSWO_PACKET_TYPE_INST) | \
 		(1 << LIBSWO_PACKET_TYPE_HW) | \
-		(1 << LIBSWO_PACKET_TYPE_UNKNOWN) | \
 		(1 << DWT_PACKET_TYPE_EVENT_COUNTER) | \
 		(1 << DWT_PACKET_TYPE_EXCEPTION_TRACE) | \
 		(1 << DWT_PACKET_TYPE_PC_SAMPLE) | \
