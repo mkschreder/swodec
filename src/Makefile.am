@@ -20,5 +20,4 @@
 bin_PROGRAMS = swodec
 
 swodec_SOURCES = \
-	dwt.c \
         main.c

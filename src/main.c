@@ -1,7 +1,7 @@
 /*
  * This file is part of the swodec project.
  *
- * Copyright (C) 2014-2015 Marc Schink <swo-dev@marcschink.de>
+ * Copyright (C) 2014-2016 Marc Schink <swo-dev@marcschink.de>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,13 +27,39 @@
 #include <string.h>
 #include <glib.h>
 
-#include "swodec.h"
+#include <libswo/libswo.h>
+
+/*
+ * Exception names according to section B1.5 of ARMv7-M Architecture Reference
+ * Manual.
+ */
+static const char *exception_names[] = {
+	"Thread",
+	"Reset",
+	"NMI",
+	"HardFault",
+	"MemManage",
+	"BusFault",
+	"UsageFault",
+	"Reserved",
+	"Reserved",
+	"Reserved",
+	"Reserved",
+	"SVCall",
+	"Debug Monitor",
+	"Reserved",
+	"PendSV",
+	"SysTick"
+};
+
+/* Number of exception names. */
+#define NUM_EXCEPTION_NAMES	16
 
 #define BUFFER_SIZE	1024
 
 static gboolean opt_version;
 static gchar *input_file = NULL;
-uint16_t packet_type_filter;
+static uint32_t packet_type_filter;
 static uint32_t inst_address_filter;
 static gboolean opt_dump_inst;
 
@@ -42,7 +68,7 @@ static gboolean parse_filter_option(const gchar *option_name,
 {
 	gchar **tokens;
 	unsigned int i;
-	uint16_t tmp;
+	uint32_t tmp;
 	gboolean invert;
 
 	(void)option_name;
@@ -61,7 +87,7 @@ static gboolean parse_filter_option(const gchar *option_name,
 
 	i = 0;
 	tokens = g_strsplit(value, ",", -1);
-	tmp = 0x0000;
+	tmp = 0x00000000;
 
 	while (tokens[i]) {
 		g_strstrip(tokens[i]);
@@ -93,24 +119,24 @@ static gboolean parse_filter_option(const gchar *option_name,
 		} else if (!g_ascii_strcasecmp(tokens[i], "hw")) {
 			tmp |= (1 << LIBSWO_PACKET_TYPE_HW);
 		} else if (!g_ascii_strcasecmp(tokens[i], "dwt")) {
-			tmp |= (1 << DWT_PACKET_TYPE_EVENT_COUNTER);
-			tmp |= (1 << DWT_PACKET_TYPE_EXCEPTION_TRACE);
-			tmp |= (1 << DWT_PACKET_TYPE_PC_SAMPLE);
-			tmp |= (1 << DWT_PACKET_TYPE_DT_PC_VALUE);
-			tmp |= (1 << DWT_PACKET_TYPE_DT_ADDR_OFFSET);
-			tmp |= (1 << DWT_PACKET_TYPE_DT_DATA_VALUE);
+			tmp |= (1 << LIBSWO_PACKET_TYPE_DWT_EVTCNT);
+			tmp |= (1 << LIBSWO_PACKET_TYPE_DWT_EXCTRACE);
+			tmp |= (1 << LIBSWO_PACKET_TYPE_DWT_PC_SAMPLE);
+			tmp |= (1 << LIBSWO_PACKET_TYPE_DWT_PC_VALUE);
+			tmp |= (1 << LIBSWO_PACKET_TYPE_DWT_ADDR_OFFSET);
+			tmp |= (1 << LIBSWO_PACKET_TYPE_DWT_DATA_VALUE);
 		} else if (!g_ascii_strcasecmp(tokens[i], "evcnt")) {
-			tmp |= (1 << DWT_PACKET_TYPE_EVENT_COUNTER);
+			tmp |= (1 << LIBSWO_PACKET_TYPE_DWT_EVTCNT);
 		} else if (!g_ascii_strcasecmp(tokens[i], "exc")) {
-			tmp |= (1 << DWT_PACKET_TYPE_EXCEPTION_TRACE);
+			tmp |= (1 << LIBSWO_PACKET_TYPE_DWT_EXCTRACE);
 		} else if (!g_ascii_strcasecmp(tokens[i], "pc")) {
-			tmp |= (1 << DWT_PACKET_TYPE_PC_SAMPLE);
+			tmp |= (1 << LIBSWO_PACKET_TYPE_DWT_PC_SAMPLE);
 		} else if (!g_ascii_strcasecmp(tokens[i], "dtpc")) {
-			tmp |= (1 << DWT_PACKET_TYPE_DT_PC_VALUE);
+			tmp |= (1 << LIBSWO_PACKET_TYPE_DWT_PC_VALUE);
 		} else if (!g_ascii_strcasecmp(tokens[i], "dtaddr")) {
-			tmp |= (1 << DWT_PACKET_TYPE_DT_ADDR_OFFSET);
+			tmp |= (1 << LIBSWO_PACKET_TYPE_DWT_ADDR_OFFSET);
 		} else if (!g_ascii_strcasecmp(tokens[i], "dtval")) {
-			tmp |= (1 << DWT_PACKET_TYPE_DT_DATA_VALUE);
+			tmp |= (1 << LIBSWO_PACKET_TYPE_DWT_DATA_VALUE);
 		} else {
 			g_critical("Invalid packet type: %s.", tokens[i]);
 			g_strfreev(tokens);
@@ -221,9 +247,6 @@ static GOptionEntry entries[] = {
 
 static void handle_hw_packet(const union libswo_packet *packet)
 {
-	if (dwt_handle_packet(&packet->hw))
-		return;
-
 	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_HW)))
 		return;
 
@@ -351,6 +374,98 @@ static void handle_gts2_packet(const union libswo_packet *packet)
 	printf("Global timestamp (GTS2) (value = %x)\n", packet->gts2.value);
 }
 
+static void handle_dwt_evtcnt_packet(const union libswo_packet *packet)
+{
+	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_DWT_EVTCNT)))
+		return;
+
+	printf("Event counter (CPI = %u, exc = %u, sleep = %u, LSU = %u, "
+		"fold = %u, cyc = %u)\n", packet->evtcnt.cpi,
+		packet->evtcnt.exc, packet->evtcnt.sleep, packet->evtcnt.lsu,
+		packet->evtcnt.fold, packet->evtcnt.cyc);
+}
+
+static void handle_dwt_exctrace_packet(const union libswo_packet *packet)
+{
+	uint16_t exception;
+	const char *func;
+	const char *name;
+	char buf[23];
+
+	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_DWT_EXCTRACE)))
+		return;
+
+	switch (packet->exctrace.function) {
+	case LIBSWO_EXCTRACE_FUNC_ENTER:
+		func = "enter";
+		break;
+	case LIBSWO_EXCTRACE_FUNC_EXIT:
+		func = "exit";
+		break;
+	case LIBSWO_EXCTRACE_FUNC_RETURN:
+		func = "return";
+		break;
+	default:
+		func = "reserved";
+	}
+
+	exception = packet->exctrace.exception;
+
+	if (exception < NUM_EXCEPTION_NAMES) {
+		name = exception_names[exception];
+	} else {
+		snprintf(buf, sizeof(buf), "External interrupt %u",
+			exception - NUM_EXCEPTION_NAMES);
+		name = buf;
+	}
+
+	printf("Exception trace (function = %s, exception = %s)\n", func,
+		name);
+}
+
+static void handle_dwt_pc_sample_packet(const union libswo_packet *packet)
+{
+	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_DWT_PC_SAMPLE)))
+		return;
+
+	if (packet->pc_sample.sleep)
+		printf("Periodic PC sleep\n");
+	else
+		printf("Periodic PC sample (value = %x)\n",
+			packet->pc_sample.pc);
+}
+
+static void handle_dwt_pc_value_packet(const union libswo_packet *packet)
+{
+	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_DWT_PC_VALUE)))
+		return;
+
+	printf("Data trace PC value (comparator = %u, value = %x)\n",
+		packet->pc_value.cmpn, packet->pc_value.pc);
+}
+
+static void handle_dwt_addr_offset_packet(const union libswo_packet *packet)
+{
+	if (!(packet_type_filter & \
+			(1 << LIBSWO_PACKET_TYPE_DWT_ADDR_OFFSET)))
+		return;
+
+	printf("Data trace address offset (comparator = %u, value = %x)\n",
+		packet->addr_offset.cmpn, packet->addr_offset.offset);
+}
+
+static void handle_dwt_data_value_packet(const union libswo_packet *packet)
+{
+	if (!(packet_type_filter & \
+			(1 << LIBSWO_PACKET_TYPE_DWT_DATA_VALUE)))
+		return;
+
+	printf("Data trace data value (comparator = %u, WnR = %u, value = %x, "
+		"size = %zu bytes)\n", packet->data_value.cmpn,
+		packet->data_value.wnr, packet->data_value.data_value,
+		packet->data_value.size - 1);
+}
+
 static int packet_cb(struct libswo_context *ctx,
 		const union libswo_packet *packet, void *user_data)
 {
@@ -384,6 +499,24 @@ static int packet_cb(struct libswo_context *ctx,
 		break;
 	case LIBSWO_PACKET_TYPE_HW:
 		handle_hw_packet(packet);
+		break;
+	case LIBSWO_PACKET_TYPE_DWT_EVTCNT:
+		handle_dwt_evtcnt_packet(packet);
+		break;
+	case LIBSWO_PACKET_TYPE_DWT_EXCTRACE:
+		handle_dwt_exctrace_packet(packet);
+		break;
+	case LIBSWO_PACKET_TYPE_DWT_PC_SAMPLE:
+		handle_dwt_pc_sample_packet(packet);
+		break;
+	case LIBSWO_PACKET_TYPE_DWT_PC_VALUE:
+		handle_dwt_pc_value_packet(packet);
+		break;
+	case LIBSWO_PACKET_TYPE_DWT_ADDR_OFFSET:
+		handle_dwt_addr_offset_packet(packet);
+		break;
+	case LIBSWO_PACKET_TYPE_DWT_DATA_VALUE:
+		handle_dwt_data_value_packet(packet);
 		break;
 	default:
 		g_warning("Invalid packet type: %u.", packet->type);
@@ -457,12 +590,12 @@ int main(int argc, char **argv)
 		(1 << LIBSWO_PACKET_TYPE_EXT) | \
 		(1 << LIBSWO_PACKET_TYPE_INST) | \
 		(1 << LIBSWO_PACKET_TYPE_HW) | \
-		(1 << DWT_PACKET_TYPE_EVENT_COUNTER) | \
-		(1 << DWT_PACKET_TYPE_EXCEPTION_TRACE) | \
-		(1 << DWT_PACKET_TYPE_PC_SAMPLE) | \
-		(1 << DWT_PACKET_TYPE_DT_PC_VALUE) | \
-		(1 << DWT_PACKET_TYPE_DT_ADDR_OFFSET) | \
-		(1 << DWT_PACKET_TYPE_DT_DATA_VALUE);
+		(1 << LIBSWO_PACKET_TYPE_DWT_EVTCNT) | \
+		(1 << LIBSWO_PACKET_TYPE_DWT_EXCTRACE) | \
+		(1 << LIBSWO_PACKET_TYPE_DWT_PC_SAMPLE) | \
+		(1 << LIBSWO_PACKET_TYPE_DWT_PC_VALUE) | \
+		(1 << LIBSWO_PACKET_TYPE_DWT_ADDR_OFFSET) | \
+		(1 << LIBSWO_PACKET_TYPE_DWT_DATA_VALUE);
 
 	/* Disable instrumentation source address filtering by default. */
 	inst_address_filter = 0xffffffff;
