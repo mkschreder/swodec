@@ -247,18 +247,12 @@ static GOptionEntry entries[] = {
 
 static void handle_hw_packet(const union libswo_packet *packet)
 {
-	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_HW)))
-		return;
-
 	printf("Hardware source (address = %u, value = %x, size = %zu bytes)\n",
 		packet->hw.address, packet->hw.value, packet->hw.size - 1);
 }
 
 static void handle_inst_packet(const union libswo_packet *packet)
 {
-	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_INST)))
-		return;
-
 	if (!(inst_address_filter & (1 << packet->inst.address)))
 		return;
 
@@ -275,9 +269,6 @@ static void handle_inst_packet(const union libswo_packet *packet)
 
 static void handle_overflow_packet(const union libswo_packet *packet)
 {
-	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_OVERFLOW)))
-		return;
-
 	(void)packet;
 	printf("Overflow\n");
 }
@@ -285,9 +276,6 @@ static void handle_overflow_packet(const union libswo_packet *packet)
 static void handle_ext_packet(const union libswo_packet *packet)
 {
 	const char *src;
-
-	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_EXT)))
-		return;
 
 	switch (packet->ext.source) {
 	case LIBSWO_EXT_SRC_ITM:
@@ -308,17 +296,11 @@ static void handle_ext_packet(const union libswo_packet *packet)
 
 static void handle_unknown_packet(const union libswo_packet *packet)
 {
-	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_UNKNOWN)))
-		return;
-
 	printf("Unknown data (size = %zu bytes)\n", packet->unknown.size);
 }
 
 static void handle_sync_packet(const union libswo_packet *packet)
 {
-	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_SYNC)))
-		return;
-
 	if (packet->sync.size % 8)
 		printf("Synchronization (size = %zu bits)\n",
 			packet->sync.size);
@@ -330,9 +312,6 @@ static void handle_sync_packet(const union libswo_packet *packet)
 static void handle_lts_packet(const union libswo_packet *packet)
 {
 	const char *tc;
-
-	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_LTS)))
-		return;
 
 	switch (packet->lts.relation) {
 	case LIBSWO_LTS_REL_SYNC:
@@ -359,26 +338,17 @@ static void handle_lts_packet(const union libswo_packet *packet)
 
 static void handle_gts1_packet(const union libswo_packet *packet)
 {
-	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_GTS1)))
-		return;
-
 	printf("Global timestamp (GTS1) (wrap = %u, clkch = %u, value = %x)\n",
 		packet->gts1.wrap, packet->gts1.clkch, packet->gts1.value);
 }
 
 static void handle_gts2_packet(const union libswo_packet *packet)
 {
-	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_GTS2)))
-		return;
-
 	printf("Global timestamp (GTS2) (value = %x)\n", packet->gts2.value);
 }
 
 static void handle_dwt_evtcnt_packet(const union libswo_packet *packet)
 {
-	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_DWT_EVTCNT)))
-		return;
-
 	printf("Event counter (CPI = %u, exc = %u, sleep = %u, LSU = %u, "
 		"fold = %u, cyc = %u)\n", packet->evtcnt.cpi,
 		packet->evtcnt.exc, packet->evtcnt.sleep, packet->evtcnt.lsu,
@@ -391,9 +361,6 @@ static void handle_dwt_exctrace_packet(const union libswo_packet *packet)
 	const char *func;
 	const char *name;
 	char buf[23];
-
-	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_DWT_EXCTRACE)))
-		return;
 
 	switch (packet->exctrace.function) {
 	case LIBSWO_EXCTRACE_FUNC_ENTER:
@@ -425,9 +392,6 @@ static void handle_dwt_exctrace_packet(const union libswo_packet *packet)
 
 static void handle_dwt_pc_sample_packet(const union libswo_packet *packet)
 {
-	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_DWT_PC_SAMPLE)))
-		return;
-
 	if (packet->pc_sample.sleep)
 		printf("Periodic PC sleep\n");
 	else
@@ -437,29 +401,18 @@ static void handle_dwt_pc_sample_packet(const union libswo_packet *packet)
 
 static void handle_dwt_pc_value_packet(const union libswo_packet *packet)
 {
-	if (!(packet_type_filter & (1 << LIBSWO_PACKET_TYPE_DWT_PC_VALUE)))
-		return;
-
 	printf("Data trace PC value (comparator = %u, value = %x)\n",
 		packet->pc_value.cmpn, packet->pc_value.pc);
 }
 
 static void handle_dwt_addr_offset_packet(const union libswo_packet *packet)
 {
-	if (!(packet_type_filter & \
-			(1 << LIBSWO_PACKET_TYPE_DWT_ADDR_OFFSET)))
-		return;
-
 	printf("Data trace address offset (comparator = %u, value = %x)\n",
 		packet->addr_offset.cmpn, packet->addr_offset.offset);
 }
 
 static void handle_dwt_data_value_packet(const union libswo_packet *packet)
 {
-	if (!(packet_type_filter & \
-			(1 << LIBSWO_PACKET_TYPE_DWT_DATA_VALUE)))
-		return;
-
 	printf("Data trace data value (comparator = %u, WnR = %u, value = %x, "
 		"size = %zu bytes)\n", packet->data_value.cmpn,
 		packet->data_value.wnr, packet->data_value.data_value,
@@ -471,6 +424,9 @@ static int packet_cb(struct libswo_context *ctx,
 {
 	(void)ctx;
 	(void)user_data;
+
+	if (!(packet_type_filter & (1 << packet->type)))
+		return TRUE;
 
 	switch (packet->type) {
 	case LIBSWO_PACKET_TYPE_UNKNOWN:
