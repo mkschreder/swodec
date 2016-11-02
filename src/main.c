@@ -29,6 +29,8 @@
 
 #include <libswo/libswo.h>
 
+#include "version.h"
+
 /*
  * Exception names according to section B1.5 of ARMv7-M Architecture Reference
  * Manual.
@@ -484,7 +486,7 @@ static int packet_cb(struct libswo_context *ctx,
 
 static void show_version(void)
 {
-	printf("%s\n", PACKAGE_STRING);
+	printf("%s\n", SWODEC_VERSION_PACKAGE_STRING);
 	printf("Using libswo %s\n", libswo_version_package_get_string());
 }
 

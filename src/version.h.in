@@ -1,0 +1,35 @@
+/*
+ * This file is part of the swodec project.
+ *
+ * Copyright (C) 2016 Marc Schink <swo-dev@marcschink.de>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef SWODEC_VERSION_H
+#define SWODEC_VERSION_H
+
+/* Major version number of the swodec package. */
+#define SWODEC_VERSION_PACKAGE_MAJOR		@SWODEC_VERSION_PACKAGE_MAJOR@
+
+/* Minor version number of the swodec package. */
+#define SWODEC_VERSION_PACKAGE_MINOR		@SWODEC_VERSION_PACKAGE_MINOR@
+
+/* Micro version number of the swodec package. */
+#define SWODEC_VERSION_PACKAGE_MICRO		@SWODEC_VERSION_PACKAGE_MICRO@
+
+/* Version number string of the swodec package. */
+#define SWODEC_VERSION_PACKAGE_STRING		"@SWODEC_VERSION_PACKAGE@"
+
+#endif /* SWODEC_VERSION_H */

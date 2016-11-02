@@ -10,9 +10,9 @@ configure
 .libs
 libtool
 *.lo
-m4
 Makefile
 Makefile.in
 *.o
 stamp-h1
 swodec
+version.h

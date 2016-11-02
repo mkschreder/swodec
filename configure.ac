@@ -52,6 +52,8 @@ PKG_CHECK_MODULES([libswo], [libswo >= 0.1.0])
 
 # Checks for library functions.
 
+SWODEC_SET_PACKAGE_VERSION([SWODEC_VERSION_PACKAGE], [AC_PACKAGE_VERSION])
+
 # Use C99 compatible stdio functions on MinGW instead of the incompatible
 # functions provided by Microsoft.
 AS_CASE([$host_os], [mingw*],
@@ -62,12 +64,13 @@ AC_SUBST([SWODEC_CFLAGS])
 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
+AC_CONFIG_FILES([src/version.h])
 
 AC_OUTPUT
 
 echo
 echo "swodec configuration summary:"
-echo " - Package version ................ $PACKAGE_VERSION"
+echo " - Package version ................ $SWODEC_VERSION_PACKAGE"
 echo " - Installation prefix ............ $prefix"
 echo " - Building on .................... $build"
 echo " - Building for ................... $host"
