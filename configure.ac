@@ -29,10 +29,11 @@ AC_CANONICAL_HOST
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
 
 # Enable additional compiler warnings via -Wall and -Wextra.
-CFLAGS="$CFLAGS -Wall -Wextra -Werror"
+SWODEC_CFLAGS="-Wall -Wextra -Werror"
 
 # Checks for programs.
 AC_PROG_CC
+AM_PROG_CC_C_O
 
 # Initialize pkg-config.
 PKG_PROG_PKG_CONFIG
@@ -40,12 +41,10 @@ PKG_PROG_PKG_CONFIG
 # Checks for libraries.
 
 # Check for glib-2.0 which is always needed.
-PKG_CHECK_MODULES([glib], [glib-2.0 >= 2.28.0],
-	[CFLAGS="$CFLAGS $glib_CFLAGS"; LIBS="$LIBS $glib_LIBS"])
+PKG_CHECK_MODULES([glib], [glib-2.0 >= 2.28.0])
 
 # Check for libswo-0.1 which is always needed.
-PKG_CHECK_MODULES([libswo], [libswo >= 0.1.0],
-	[CFLAGS="$CFLAGS $libswo_CFLAGS"; LIBS="$LIBS $libswo_LIBS"])
+PKG_CHECK_MODULES([libswo], [libswo >= 0.1.0])
 
 # Checks for header files.
 
@@ -58,6 +57,8 @@ PKG_CHECK_MODULES([libswo], [libswo >= 0.1.0],
 AS_CASE([$host_os], [mingw*],
 	[AC_DEFINE([__USE_MINGW_ANSI_STDIO], [1],
 		[Define to 1 to use C99 compatible stdio functions on MinGW.])])
+
+AC_SUBST([SWODEC_CFLAGS])
 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])

@@ -21,3 +21,6 @@ bin_PROGRAMS = swodec
 
 swodec_SOURCES = \
         main.c
+
+swodec_CFLAGS = $(SWODEC_CFLAGS) $(glib_CFLAGS) $(libswo_CFLAGS)
+swodec_LDADD = $(glib_LIBS) $(libswo_LIBS)
