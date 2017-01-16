@@ -19,7 +19,7 @@
 
 AC_PREREQ([2.69])
 
-AC_INIT([swodec], [0.1.0], [BUG-REPORT-ADDRESS])
+AC_INIT([swodec], [0.1.0], [swo-dev@marcschink.de])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
