@@ -249,8 +249,8 @@ static GOptionEntry entries[] = {
 
 static void handle_hw_packet(const union libswo_packet *packet)
 {
-	printf("Hardware source (address = %u, value = %x, size = %zu bytes)\n",
-		packet->hw.address, packet->hw.value, packet->hw.size - 1);
+	printf("Hardware source (address = %u, value = 0x%08x (%c), size = %zu bytes)\n",
+		packet->hw.address, packet->hw.value, packet->hw.value, packet->hw.size - 1);
 }
 
 static void handle_inst_packet(const union libswo_packet *packet)
@@ -264,8 +264,8 @@ static void handle_inst_packet(const union libswo_packet *packet)
 		return;
 	}
 
-	printf("Instrumentation (address = %u, value = %x, size = %zu bytes)\n",
-		packet->inst.address, packet->inst.value,
+	printf("Instrumentation (address = %u, value = 0x%08x (%c), size = %zu bytes)\n",
+		packet->inst.address, packet->inst.value, packet->inst.value,
 		packet->inst.size - 1);
 }
 
@@ -415,9 +415,9 @@ static void handle_dwt_addr_offset_packet(const union libswo_packet *packet)
 
 static void handle_dwt_data_value_packet(const union libswo_packet *packet)
 {
-	printf("Data trace data value (comparator = %u, WnR = %u, value = %x, "
+	printf("Data trace data value (comparator = %u, r/w = %c, value = %x, "
 		"size = %zu bytes)\n", packet->data_value.cmpn,
-		packet->data_value.wnr, packet->data_value.data_value,
+		((packet->data_value.wnr)?'w':'r'), packet->data_value.data_value,
 		packet->data_value.size - 1);
 }
 
